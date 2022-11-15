@@ -1,8 +1,6 @@
-# Copied from https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/windows/dockerbuild/build-and-publish-docker-image.ps1
-
 <#
     .DESCRIPTION
-     Builds the Windows Agent code and Docker Image and pushes the docker image to specified repo
+     Builds the windows host container image containing the Geneva Agent and pushes the image to specified repo
 
     .PARAMETER image
         docker image. format should be <repo>/<image-name>:<tag>
@@ -43,11 +41,13 @@ if ($imagetag.StartsWith("win-") -eq $false)
 
 Write-Host "image tag used is :$imagetag"
 
-Write-Host "start:Building the cert generator and out oms code via Makefile.ps1"
-..\..\..\build\windows\Makefile.ps1
-Write-Host "end:Building the cert generator and out oms code via Makefile.ps1"
+Write-Host "start:Building the livenessprobe code via Makefile.ps1"
+..\..\..\build\windowsGeneva\Makefile.ps1
+Write-Host "end:Building the livenessprobe code via Makefile.ps1"
 
-$dockerFileDir = Split-Path -Path $currentdir
+
+Write-Host $currentdir
+$dockerFileDir = $currentdir
 Write-Host("builddir dir : " + $dockerFileDir + " ")
 if ($false -eq (Test-Path -Path $dockerFileDir)) {
     Write-Host("Invalid dockerFile Dir : " + $dockerFileDir + " ") -ForegroundColor Red

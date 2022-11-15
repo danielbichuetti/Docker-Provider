@@ -1,5 +1,3 @@
-# Copied from https://github.com/microsoft/Docker-Provider/blob/ci_prod/kubernetes/windows/Dockerfile
-
 # Supported values of windows version are ltsc2019 or ltsc2022 which are being passed by the build script or build pipeline
 ARG WINDOWS_VERSION=
 FROM mcr.microsoft.com/windows/servercore:${WINDOWS_VERSION}
@@ -17,19 +15,10 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'" \
 && choco install -y vim
 
-# gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN refreshenv \
 && ridk install 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.7.1 --platform ruby \
-&& gem install oj -v 3.3.10 \
-&& gem install fluentd -v 1.14.6 \
-&& gem install win32-service -v 1.0.1 \
-&& gem install win32-ipc -v 0.7.0 \
-&& gem install win32-event -v 0.6.3 \
-&& gem install windows-pr -v 1.2.6 \
 && gem install tomlrb -v 2.0.1 \
-&& gem install gyoku -v 1.3.1 \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
@@ -39,45 +28,14 @@ SHELL ["powershell"]
 
 ENV tmpdir /opt/amalogswindows/scripts/powershell
 
-WORKDIR /opt/amalogswindows/scripts/powershell
-
-# copy certificate generator binaries zip
-COPY ./amalogswindows/*.zip /opt/amalogswindows/
-
-COPY setup.ps1 /opt/amalogswindows/scripts/powershell
-RUN ./setup.ps1
-
-COPY main.ps1 /opt/amalogswindows/scripts/powershell
-COPY ./amalogswindows/installer/scripts/filesystemwatcher.ps1 /opt/amalogswindows/scripts/powershell
-COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswindows/scripts/cmd/
-COPY setdefaulttelegrafenvvariables.ps1 /opt/amalogswindows/scripts/powershell
+COPY setup.ps1 /opt/amalogswindows/scripts/powershell/setup.ps1
+RUN ./opt/amalogswindows/scripts/powershell/setup.ps1
 
 # copy ruby scripts to /opt folder
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
 
-# copy out_oms.so file
-COPY ./amalogswindows/out_oms.so /opt/amalogswindows/out_oms.so
+COPY main.ps1 /opt/amalogswindows/scripts/powershell/main.ps1
+COPY ./amalogswindows/installer/scripts/filesystemwatcher.ps1 /opt/amalogswindows/scripts/powershell
+COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswindows/scripts/cmd/
 
-# copy fluent, fluent-bit and out_oms conf files
-COPY ./amalogswindows/installer/conf/fluent.conf /etc/fluent/
-COPY ./amalogswindows/installer/conf/fluent-bit.conf /etc/fluent-bit
-COPY ./amalogswindows/installer/conf/azm-containers-parser.conf /etc/fluent-bit/
-COPY ./amalogswindows/installer/conf/out_oms.conf /etc/amalogswindows
-
-# copy telegraf conf file
-COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
-
-# copy keepcert alive ruby scripts
-COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
-
-#Copy fluentd ruby plugins
-COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
-
-ENV AGENT_VERSION ${IMAGE_TAG}
-ENV OS_TYPE "windows"
-ENV APPLICATIONINSIGHTS_AUTH "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
-ENV AZMON_COLLECT_ENV False
-ENV CI_CERT_LOCATION "C://oms.crt"
-ENV CI_KEY_LOCATION "C://oms.key"
-
-ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
+ENTRYPOINT ["powershell", ".\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
